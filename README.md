@@ -1,6 +1,8 @@
 # @inoblend/google-firebase-apis
 
-Firebase Auth + Firestore admin utilities over plain REST. **Zero dependencies**, only `fetch` and Web Crypto, so it runs on Cloudflare Workers, Vercel Edge, Deno, Bun and Node 18+ (where `firebase-admin` doesn't).
+Firebase Auth + Firestore admin utilities over plain REST. **Zero dependencies**, using standard `fetch` and Web Crypto APIs, so it runs on Cloudflare Workers, Vercel Edge, Deno, Bun and Node 20+.
+
+This is a **server-side library**. It uses service-account credentials with administrative access; never bundle its private key into a browser or other untrusted client.
 
 ## Install
 
@@ -54,9 +56,9 @@ export default {
 
 ## API
 
-**`fb.auth`**: `verifyIdToken`, `createUser`, `setCustomUserClaims`, `disableUser`, `resetPasswordUser`, `requestPasswordReset`, `verifyPasswordResetCode`, `confirmPasswordReset`
+**`fb.auth`**: `verifyIdToken`, `createUser`, `updateUser`, `setCustomUserClaims`, `disableUser`, `deleteUserPermanent`, `resetUserPassword`, `requestPasswordReset`, `verifyPasswordResetCode`, `confirmPasswordReset`
 
-**`fb.firestore`**: `set` (replace or `{ merge: true }`), `update` (partial + atomic `increments`), `get`, `delete`
+**`fb.firestore`**: `set` (replace or `{ merge: true }`), `update` (partial + atomic `increments`), `get`, `list` (single filtered/ordered query; up to 500 documents), `listPage` (filtered/ordered cursor pagination; pass each `nextPageToken` as `pageToken`), `delete`
 
 Errors are thrown as `FirebaseError` with a `.code` (`EMAIL_EXISTS`, `WEAK_PASSWORD`, `USER_NOT_FOUND`, `INVALID_ID_TOKEN`, `USER_DISABLED`, ...).
 
