@@ -174,7 +174,7 @@ describe('firestore.set', () => {
 });
 
 describe('firestore.update', () => {
-  const commitRoute: [string, () => object] = [`POST ${FS_DOCS}:commit`, () => ({})];
+  const commitRoute: [string, () => any] = [`POST ${FS_DOCS}:commit`, () => ({})];
 
   it('commits a masked partial update', async () => {
     const { ctx, calls } = makeCtx(routes([commitRoute]));
@@ -358,6 +358,85 @@ describe('firestore.list', () => {
     const { ctx, calls } = makeCtx(routes([[`POST ${FS_DOCS}:runQuery`, () => []]]));
     await createFirestore(ctx).list('users', { limit: 1000 });
     expect(calls[0].body.structureQuery.limit).toBe(500);
+  });
+
+  it('returns a stable cursor token and uses it to fetch the next ordered page', async () => {
+    let page = 0;
+    const { ctx, calls } = makeCtx(() => {
+      page++;
+      return [
+        {
+          document: {
+            name: DOC_NAME(`orders/o${page * 2 - 1}`),
+            fields: {
+              createdAt: { timestampValue: `2026-01-0${page}T00:00:00Z` },
+              total: { integerValue: '10' },
+            },
+          },
+        },
+        {
+          document: {
+            name: DOC_NAME(`orders/o${page * 2}`),
+            fields: {
+              createdAt: { timestampValue: `2026-01-0${page}T00:00:00Z` },
+              total: { integerValue: '20' },
+            },
+          },
+        },
+      ];
+    });
+    const firestore = createFirestore(ctx);
+    const query = { limit: 2, orderBy: 'createdAt', direction: 'DESCENDING' as const };
+
+    const firstPage = await firestore.listPage('orders', query);
+    expect(firstPage.documents).toEqual([
+      { id: 'o1', createdAt: new Date('2026-01-01T00:00:00Z'), total: 10 },
+      { id: 'o2', createdAt: new Date('2026-01-01T00:00:00Z'), total: 20 },
+    ]);
+    expect(firstPage.nextPageToken).toBeTruthy();
+    expect(calls[0].body.structureQuery.orderBy).toEqual([
+      { direction: 'DESCENDING', field: { fieldPath: 'createdAt' } },
+      { direction: 'DESCENDING', field: { fieldPath: '__name__' } },
+    ]);
+
+    const secondPage = await firestore.listPage('orders', {
+      ...query,
+      pageToken: firstPage.nextPageToken,
+    });
+    expect(secondPage.documents).toEqual([
+      { id: 'o3', createdAt: new Date('2026-01-02T00:00:00Z'), total: 10 },
+      { id: 'o4', createdAt: new Date('2026-01-02T00:00:00Z'), total: 20 },
+    ]);
+    expect(calls[1].body.structureQuery.startAt).toEqual({
+      values: [
+        { timestampValue: '2026-01-01T00:00:00Z' },
+        { referenceValue: DOC_NAME('orders/o2') },
+      ],
+      before: false,
+    });
+  });
+
+  it('uses document name ordering by default and rejects a token for another query', async () => {
+    const { ctx, fn } = makeCtx(() => [
+      { document: { name: DOC_NAME('users/u1'), fields: { email: { stringValue: 'a@b.co' } } } },
+    ]);
+    const firestore = createFirestore(ctx);
+    const firstPage = await firestore.listPage('users', { limit: 1 });
+
+    expect(firstPage.nextPageToken).toBeTruthy();
+    expect(fn.mock.calls[0][1]?.body).toContain('"fieldPath":"__name__"');
+    await expect(
+      firestore.listPage('members', { limit: 1, pageToken: firstPage.nextPageToken })
+    ).rejects.toMatchObject({ code: 'INVALID_PAGE_TOKEN' });
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects malformed page tokens', async () => {
+    const { ctx, fn } = makeCtx();
+    await expect(
+      createFirestore(ctx).listPage('users', { pageToken: 'not a token' })
+    ).rejects.toMatchObject({ code: 'INVALID_PAGE_TOKEN' });
+    expect(fn).not.toHaveBeenCalled();
   });
 
   it('throws on query errors', async () => {

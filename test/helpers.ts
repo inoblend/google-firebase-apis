@@ -26,7 +26,7 @@ export interface Call {
   headers: Record<string, string>;
   body: any; // parsed JSON when possible, raw string otherwise
 }
-export type Reply = Response | Record<string, unknown> | undefined;
+export type Reply = Response | Record<string, unknown> | unknown[] | undefined;
 export type Handler = (call: Call) => Reply | Promise<Reply>;
 
 export function jsonResponse(body: unknown, status = 200): Response {

@@ -59,7 +59,14 @@ describe('public exports', () => {
       'verifyIdToken',
       'verifyPasswordResetCode',
     ]);
-    expect(Object.keys(gf.firestore).sort()).toEqual(['delete', 'get', "list", 'set', 'update']);
+    expect(Object.keys(gf.firestore).sort()).toEqual([
+      'delete',
+      'get',
+      'list',
+      'listPage',
+      'set',
+      'update',
+    ]);
   });
 });
 
