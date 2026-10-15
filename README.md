@@ -50,7 +50,7 @@ export default {
 | `apiKey` | Web API key (public Identity Toolkit endpoints). |
 | `usersCollection` | Default `"users"`. |
 | `emailSender` | `(msg) => Promise<boolean>`. Use `resendEmailSender({ apiKey, from })` or your own. |
-| `fetch` | Optional custom fetch. |
+| `fetchFn` | Optional custom fetch implementation. |
 
 `configFromEnv` reads `GF_PROJECT_ID`, `GF_CLIENT_EMAIL`, `GF_PRIVATE_KEY_ID`, `GF_PRIVATE_KEY`, `GF_API_KEY`, and optionally `GF_RESEND_API_KEY` + `GF_RESEND_EMAIL_FROM`.
 
@@ -65,3 +65,7 @@ Errors are thrown as `FirebaseError` with a `.code` (`EMAIL_EXISTS`, `WEAK_PASSW
 ## Firestore user doc fields
 
 `email, displayName, phoneNumber, role, disabled, disabledAt, passwordResetCount, passwordResetAt, passwordResetLinkSentAt, passwordResetLinkVerifiedAt, passwordResetConfirmedAt, createdAt, updatedAt`. Timestamps are epoch milliseconds (numbers).
+
+## Runtime compatibility checks
+
+CI checks Node.js 20, 22 and 24, and runs a dependency-free smoke test against the built package on Node.js, Deno and Bun. Run the Node.js smoke test locally with `pnpm run test:runtime`.

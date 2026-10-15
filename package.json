@@ -1,7 +1,7 @@
 {
   "name": "@inoblend/google-firebase-apis",
   "version": "0.1.5",
-  "description": "Zero-dependency Firebase Auth + Firestore admin utilities over REST. Runs on Cloudflare Workers, Vercel Edge, Deno, Bun and Node 18+.",
+  "description": "Zero-dependency Firebase Auth + Firestore admin utilities over REST. Runs on Cloudflare Workers, Vercel Edge, Deno, Bun and Node 20+.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -12,7 +12,8 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:runtime": "pnpm run build && node scripts/runtime-smoke.mjs"
   },
   "publishConfig": {
     "access": "public"
